@@ -1,0 +1,21 @@
+import { Router } from 'express';
+import { login } from '../controllers/authController.js';
+import { listRooms } from '../controllers/roomController.js';
+import { listOccupancy, listOccupancyHistory, updateOccupancy } from '../controllers/occupancyController.js';
+import { listSchedules, createSchedule } from '../controllers/scheduleController.js';
+import { listBookings, createBooking } from '../controllers/bookingController.js';
+import { utilization } from '../controllers/reportController.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = Router();
+router.post('/auth/login', login);
+router.get('/rooms', listRooms);
+router.get('/occupancy', listOccupancy);
+router.get('/occupancy/history', listOccupancyHistory);
+router.post('/occupancy', updateOccupancy);
+router.get('/schedules', listSchedules);
+router.post('/schedules', requireAuth, createSchedule);
+router.get('/bookings', requireAuth, listBookings);
+router.post('/bookings', requireAuth, createBooking);
+router.get('/reports/utilization', requireAuth, utilization);
+export default router;

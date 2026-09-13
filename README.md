@@ -11,6 +11,8 @@ It combines a React dashboard with an Express and PostgreSQL API. The project al
 - Selects the smallest suitable room for an event when no room is specified.
 - Prevents overlapping bookings for the same room.
 - Displays schedules, booking activity, sensor history, and utilization reports.
+- Provides recent sensor notifications from the dashboard bell.
+- Includes a simple light/dark theme switch, navigation, footer, and quick-use instructions.
 - Provides JWT-protected admin access.
 
 ## Tech Stack
@@ -111,6 +113,19 @@ Password: admin123
 ```
 
 Change or remove this demo credential before deploying the application.
+
+## Dashboard Guide
+
+After signing in:
+
+1. **Overview** shows current room occupancy, open rooms, campus utilization, and recent sensor readings.
+2. **Room scout** lets you select a room and inspect its live headcount, available seats, and sensor status.
+3. **Event planner** accepts the event details and attendee count. Leave room selection on automatic to choose the smallest suitable free room.
+4. **Sensor activity** shows the reading archive from the occupancy sensors.
+5. Select the **Light/Dark** control in the header to change the appearance. The choice is saved in the browser.
+6. Select the **bell** to view recent room activity notifications. The list is refreshed with the dashboard sensor polling.
+
+The navbar identifies the current application, and the footer confirms the dashboard context on both the login and authenticated screens.
 
 ## Available Commands
 

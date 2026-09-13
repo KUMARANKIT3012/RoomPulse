@@ -1,4 +1,5 @@
 node_modules/
 client/dist/
-server/.env
-client/.env
+**/.env
+**/.env.*
+!**/.env.example

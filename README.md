@@ -1,69 +1,77 @@
 # RoomPulse
 
-RoomPulse is a smart classroom operations dashboard for monitoring live room occupancy, planning events, allocating classrooms, and tracking campus utilization.
+RoomPulse is a smart classroom operations dashboard for monitoring live room occupancy, planning events, and allocating campus spaces efficiently. The project mixes a React dashboard with an Express + PostgreSQL backend and includes practical Design and Analysis of Algorithms (DAA) logic for room selection and scheduling checks.
 
-It combines a React dashboard with an Express and PostgreSQL API. The project also demonstrates practical Design and Analysis of Algorithms (DAA) concepts through room allocation, interval scheduling, and binary search.
+## Why this project exists
 
-## What It Does
+This app was designed to solve a common campus problem: deciding which classroom is available, how full it is, and whether an event can be scheduled without conflict. It combines live occupancy information, room metadata, booking validation, and algorithmic room assignment into one dashboard.
 
-- Shows live classroom occupancy from ESP32/PIR-style sensor readings.
-- Highlights room capacity, availability, equipment, and building location.
-- Selects the smallest suitable room for an event when no room is specified.
-- Prevents overlapping bookings for the same room.
-- Displays schedules, booking activity, sensor history, and utilization reports.
-- Provides recent sensor notifications from the dashboard bell.
-- Includes a simple light/dark theme switch, navigation, footer, and quick-use instructions.
-- Provides JWT-protected admin access.
+## Main features
 
-## Tech Stack
+- Live classroom occupancy monitoring using simulated sensor-style readings
+- Quick room view with building, floor, capacity, and equipment details
+- Smallest-fit room selection when no room is chosen during event planning
+- Conflict checking for overlapping bookings and schedules
+- Recent notification and activity feed for room events
+- JWT-protected admin login and booking access
+- Light and dark mode interface
+- DAA-driven room allocation and scheduling logic
 
-- **Frontend:** React, Vite, Tailwind CSS, Lucide React
-- **Backend:** Node.js, Express, JWT, bcryptjs
-- **Database:** PostgreSQL
-- **Architecture:** PERN-style client and REST API
+## Tech stack
 
-## Project Structure
+- Frontend: React, Vite, Tailwind CSS, Lucide React
+- Backend: Node.js, Express, PostgreSQL, JWT, bcryptjs
+- Architecture: client + server with REST API and PostgreSQL persistence
+
+## Project structure
 
 ```text
 .
-├── client/                 # React and Vite dashboard
-├── server/                 # Express REST API
-│   ├── sql/schema.sql      # PostgreSQL tables and indexes
+├── client/                  # React + Vite frontend
+├── server/                  # Express API and database scripts
+│   ├── sql/
+│   │   └── schema.sql       # Database schema and indexes
 │   └── src/
-│       ├── controllers/    # HTTP request handlers
-│       ├── models/         # Database queries
-│       ├── routes/         # API routes
-│       └── services/       # Room allocation and DAA algorithms
-├── package.json
-└── README.md
+│       ├── config/          # Database configuration
+│       ├── controllers/     # Request handlers
+│       ├── middleware/      # Auth middleware
+│       ├── models/          # SQL access helpers (if used by the app)
+│       ├── routes/          # API routing
+│       ├── services/        # DAA algorithms and classroom logic
+│       ├── app.js           # Express app setup
+│       ├── seed.js          # Demo data seeding
+│       └── server.js        # Server entry point
+├── package.json             # Root scripts for full-project tasks
+├── README.md
+└── .gitignore
 ```
 
 ## Requirements
 
-- Node.js 18 or newer
+- Node.js 18+
 - npm
-- PostgreSQL 14 or newer
+- PostgreSQL 14+
 - Git
 
-## Local Setup
+## Quick start
 
 ### 1. Install dependencies
 
 From the project root:
 
-```powershell
+```bash
 npm run install:all
 ```
 
-### 2. Configure the API
+### 2. Configure the backend environment
 
-Create `server/.env` from `server/.env.example`:
+Create the environment file from the example:
 
-```powershell
+```bash
 Copy-Item server/.env.example server/.env
 ```
 
-Update the values if your PostgreSQL configuration is different:
+Then make sure the values match your local PostgreSQL setup:
 
 ```env
 PORT=4000
@@ -72,137 +80,133 @@ JWT_SECRET=replace-with-a-long-random-secret
 CLIENT_ORIGIN=http://localhost:5173
 ```
 
-Create the `smart_classroom` database, then apply the schema and sample data:
+### 3. Create the database and seed the demo data
 
-```powershell
+Create the `smart_classroom` database in PostgreSQL, then run:
+
+```bash
 psql "$env:DATABASE_URL" -f server/sql/schema.sql
-npm run seed --prefix server
+npm run seed
 ```
 
-### 3. Start the application
+If the database already exists and you want a clean reset, run the schema again before seeding.
 
-The easiest option is to run both applications from the project root:
+### 4. Start the app
 
-```powershell
+Run the whole project from the root:
+
+```bash
 npm run dev
 ```
 
-Or start them separately in two terminals:
+This starts both the server and the client together.
 
-```powershell
+If you want to run them separately:
+
+```bash
 # Terminal 1
-cd server
-npm run server
+npm run dev:server
 
 # Terminal 2
-cd client
-npm run dev
+npm run dev:client
 ```
 
-Open the dashboard at [http://localhost:5173](http://localhost:5173).
+Open the client in your browser at:
 
-If Vite automatically selects another port, open the URL printed in the terminal. The API accepts local Vite ports during development.
+- http://localhost:5173
 
-## Demo Login
+The API is available at:
 
-The seed script creates this local development administrator:
+- http://localhost:4000/api
+
+## Demo login
+
+The seeded development account is:
 
 ```text
-Email:    admin@campus.local
+Email: admin@campus.local
 Password: admin123
 ```
 
-Change or remove this demo credential before deploying the application.
+Use this only for local development. Replace or remove it before production deployment.
 
-## Dashboard Guide
+## How the app works
 
-After signing in:
+1. The overview page shows live room usage, available classrooms, and utilization metrics.
+2. The room scout tab lets you inspect occupancy, room capacity, and equipment.
+3. The event planner accepts attendee count and requested time range, then selects an appropriate room automatically.
+4. The activity view tracks recent sensor readings and occupancy changes.
+5. The header supports theme switching and browsing recent room notifications.
 
-1. **Overview** shows current room occupancy, open rooms, campus utilization, and recent sensor readings.
-2. **Room scout** lets you select a room and inspect its live headcount, available seats, and sensor status.
-3. **Event planner** accepts the event details and attendee count. Leave room selection on automatic to choose the smallest suitable free room.
-4. **Sensor activity** shows the reading archive from the occupancy sensors.
-5. Select the **Light/Dark** control in the header to change the appearance. The choice is saved in the browser.
-6. Select the **bell** to view recent room activity notifications. The list is refreshed with the dashboard sensor polling.
-
-The navbar identifies the current application, and the footer confirms the dashboard context on both the login and authenticated screens.
-
-## Available Commands
-
-Run these commands from the project root unless noted otherwise:
-
-| Command | Description |
-| --- | --- |
-| `npm run install:all` | Install client and server dependencies |
-| `npm run dev` | Start the client and API together |
-| `npm run start` | Start the API in production mode |
-| `npm run build --prefix client` | Build the frontend for production |
-| `npm run seed --prefix server` | Seed the database with demo data |
-| `npm run dev --prefix server` | Start the API with Node watch mode |
-| `npm run dev --prefix client` | Start the Vite dashboard |
-
-## API Overview
+## Important API routes
 
 Base URL: `http://localhost:4000/api`
 
 | Method | Endpoint | Auth | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/auth/login` | No | Authenticate an administrator |
-| `GET` | `/rooms` | No | List rooms with latest occupancy |
-| `GET` | `/occupancy` | No | Get the latest reading for each room |
-| `GET` | `/occupancy/history` | No | Get occupancy history |
-| `POST` | `/occupancy` | No | Add a sensor occupancy reading |
-| `GET` | `/schedules` | No | List scheduled classes |
-| `POST` | `/schedules` | JWT | Create a schedule |
-| `GET` | `/bookings` | JWT | List bookings |
-| `POST` | `/bookings` | JWT | Create a conflict-checked booking |
-| `GET` | `/reports/utilization` | JWT | Get room utilization metrics |
+| POST | `/auth/login` | No | Admin login |
+| GET | `/rooms` | No | List rooms and latest occupancy |
+| GET | `/occupancy` | No | Latest reading for each room |
+| GET | `/occupancy/history` | No | Occupancy history |
+| POST | `/occupancy` | No | Add sensor reading |
+| GET | `/schedules` | No | List schedules |
+| POST | `/schedules` | JWT | Add schedule |
+| GET | `/bookings` | JWT | View bookings |
+| POST | `/bookings` | JWT | Create booking with conflict checks |
+| GET | `/reports/utilization` | JWT | Get utilization analytics |
 
 Health check:
 
-```text
-GET http://localhost:4000/api/health
+```bash
+curl http://localhost:4000/api/health
 ```
 
-## DAA Concepts Used
+## DAA concepts used
 
-The algorithm implementations are in `server/src/services/algorithms.js` and are used by `server/src/services/classroomService.js`.
+The scheduling and allocation logic lives in the server service layer and demonstrates several algorithmic ideas:
 
-- **Greedy allocation:** chooses the smallest available room that can fit the requested number of attendees.
-- **Activity selection:** works with finish times to select a conflict-free set of intervals.
-- **Binary search:** finds lower bounds in sorted room-capacity and timetable data.
-- **Interval conflict detection:** rejects overlapping bookings for a room and time range.
+- Greedy allocation: picks the smallest suitable room that can fit the attendees
+- Activity selection: resolves compatible time windows without overlap
+- Binary search: helps with lower-bound checks on sorted room and scheduling data
+- Interval conflict detection: rejects bookings that overlap in the same room
+
+## Useful commands
+
+From the project root:
+
+| Command | Description |
+| --- | --- |
+| `npm run install:all` | Install all dependencies |
+| `npm run dev` | Start both client and server |
+| `npm run dev:server` | Start the API only |
+| `npm run dev:client` | Start the frontend only |
+| `npm run build` | Build the frontend for production |
+| `npm run start` | Start the API in production mode |
+| `npm run seed` | Seed demo data into PostgreSQL |
 
 ## Troubleshooting
 
 ### Port 4000 is already in use
 
-Another API process is already running. Check it first:
+Check whether there is already an API instance running:
 
-```powershell
-Invoke-RestMethod http://localhost:4000/api/health
+```bash
+curl http://localhost:4000/api/health
 ```
 
-If it is the old process, stop it and restart the API:
+If needed, stop the old process and restart the server.
 
-```powershell
-$listener = Get-NetTCPConnection -LocalPort 4000 -State Listen
-Stop-Process -Id $listener.OwningProcess -Force
-cd server
-npm run server
-```
+### Login returns failed to fetch
 
-### Login says `Failed to fetch`
+Verify that the backend is running and that the frontend is pointing to the correct API origin.
 
-Make sure the API is running and that the dashboard is using the URL printed by Vite. During local development, the API allows `localhost` Vite ports.
+### No rooms appear in the dashboard
 
-### Dashboard shows no rooms
+Run the schema and seed again:
 
-Run the schema and seed commands again, then refresh the dashboard:
-
-```powershell
+```bash
 psql "$env:DATABASE_URL" -f server/sql/schema.sql
-npm run seed --prefix server
+npm run seed
 ```
 
 ## License

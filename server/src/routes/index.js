@@ -5,6 +5,7 @@ import { listOccupancy, listOccupancyHistory, updateOccupancy } from '../control
 import { listSchedules, createSchedule } from '../controllers/scheduleController.js';
 import { listBookings, createBooking } from '../controllers/bookingController.js';
 import { utilization } from '../controllers/reportController.js';
+import { getAttendanceReport, scanAttendance } from '../controllers/attendanceController.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -13,6 +14,8 @@ router.get('/rooms', listRooms);
 router.get('/occupancy', listOccupancy);
 router.get('/occupancy/history', listOccupancyHistory);
 router.post('/occupancy', updateOccupancy);
+router.get('/attendance/report', requireAuth, getAttendanceReport);
+router.post('/attendance/scan', scanAttendance);
 router.get('/schedules', listSchedules);
 router.post('/schedules', requireAuth, createSchedule);
 router.get('/bookings', requireAuth, listBookings);

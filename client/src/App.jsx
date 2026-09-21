@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Activity, ArrowUpRight, Bell, CalendarDays, CheckCircle2, ChevronRight, CircleDot,
+  Activity, ArrowUpRight, Bell, CalendarDays, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck,
   Clock3, DoorOpen, Gauge, LayoutDashboard, LogOut, MapPin, Radio, RefreshCw,
   ScanLine, Search, Settings2, Sparkles, Users, Wifi
 } from 'lucide-react';
@@ -51,7 +51,8 @@ function Sidebar({ active, setActive, onLogout, admin }) {
     ['overview', 'Overview', LayoutDashboard],
     ['rooms', 'Room scout', ScanLine],
     ['events', 'Event planner', CalendarDays],
-    ['activity', 'Sensor activity', Activity]
+    ['activity', 'Sensor activity', Activity],
+    ['attendance', 'Attendance', ClipboardCheck]
   ];
   return <aside className="sidebar">
     <div className="sidebar-brand"><div className="brand-mark small"><Radio size={18} /></div><div><strong>RoomPulse</strong><span>IEEE chapter ops</span></div></div>
@@ -65,7 +66,7 @@ function Sidebar({ active, setActive, onLogout, admin }) {
 }
 
 function Header({ active, refreshing, onRefresh, darkMode, setDarkMode, history }) {
-  const titles = { overview: ['Good evening, team', 'Here is what is happening across your campus right now.'], rooms: ['Room scout', 'Scan live availability before you walk to a classroom.'], events: ['Event planner', 'Turn a headcount into the right room in seconds.'], activity: ['Sensor activity', 'A live audit trail from your ESP32 / PIR network.'] };
+  const titles = { overview: ['Good evening, team', 'Here is what is happening across your campus right now.'], rooms: ['Room scout', 'Scan live availability before you walk to a classroom.'], events: ['Event planner', 'Turn a headcount into the right room in seconds.'], activity: ['Sensor activity', 'A live audit trail from your ESP32 / dual-IR network.'], attendance: ['Attendance', 'RFID scans show who entered class and who did not.'] };
   const [showNotifications, setShowNotifications] = useState(false);
   const notifications = history.slice(0, 4);
   return <header className="topbar"><div><p className="eyebrow">{active === 'overview' ? 'THURSDAY · 11 SEPTEMBER 2026' : 'IEEE STUDENT CHAPTER · LIVE CONSOLE'}</p><h2>{titles[active][0]}</h2><p className="subtle">{titles[active][1]}</p></div><div className="top-actions"><button className="theme-toggle" onClick={() => setDarkMode(value => !value)} aria-pressed={darkMode}>{darkMode ? 'Dark' : 'Light'}</button><div className="notification-wrap"><button className="icon-button" onClick={() => setShowNotifications(value => !value)} aria-label="Show notifications" aria-expanded={showNotifications}><Bell size={18} />{notifications.length > 0 && <span className="notification-dot" />}</button>{showNotifications && <div className="notification-panel"><div className="notification-heading"><strong>Notifications</strong><button onClick={() => setShowNotifications(false)}>Close</button></div>{notifications.length ? notifications.map(item => <div className="notification-item" key={item.id}><span className={item.people_count ? 'notification-state occupied' : 'notification-state free'} /> <div><strong>{item.room_name}</strong><span>{item.people_count ? `${item.people_count} people detected` : 'Room is empty'} · {formatTime(item.recorded_at)}</span></div></div>) : <p className="subtle">No recent sensor activity.</p>}</div>}</div><button className="refresh-button" onClick={onRefresh}><RefreshCw size={15} className={refreshing ? 'spin' : ''} /> Sync now</button></div></header>;
@@ -123,6 +124,15 @@ function ActivityFeed({ history }) {
   return <section className="feed-card"><div className="section-heading"><div><p className="eyebrow">AUDIT TRAIL</p><h3>Latest sensor readings</h3></div><CircleDot size={18} className="muted-icon" /></div><div className="feed-list">{history.slice(0, 7).map(item => <div className="feed-row" key={item.id}><div className={`feed-icon ${item.people_count ? 'occupied' : 'free'}`}>{item.people_count ? <Users size={15} /> : <CheckCircle2 size={15} />}</div><div><strong>{item.room_name}</strong><span>{item.people_count ? `${item.people_count} people detected` : 'Room is empty'}</span></div><time>{formatTime(item.recorded_at)}</time></div>)}{!history.length && <p className="subtle">No readings yet.</p>}</div></section>;
 }
 
+function AttendancePanel({ schedules, token }) {
+  const [scheduleId, setScheduleId] = useState(schedules[0]?.id || '');
+  const [report, setReport] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => { if (!scheduleId && schedules.length) setScheduleId(schedules[0].id); }, [scheduleId, schedules]);
+  useEffect(() => { if (!scheduleId) return; api(`/attendance/report?scheduleId=${scheduleId}`, {}, token).then(setReport).catch(e => setError(e.message)); }, [scheduleId, token]);
+  return <section className="attendance-panel"><div className="section-heading"><div><p className="eyebrow">RFID ATTENDANCE</p><h3>Who entered this class?</h3><p className="subtle">The RFID reader marks a student present once per scheduled class.</p></div><ClipboardCheck size={18} className="muted-icon" /></div><select className="field attendance-select" value={scheduleId} onChange={e => { setScheduleId(e.target.value); setError(''); }}><option value="">Choose a class</option>{schedules.map(schedule => <option key={schedule.id} value={schedule.id}>{schedule.course_code} · {schedule.title}</option>)}</select>{error && <p className="error-box">{error}</p>}{report && <><div className="attendance-stats"><div><span>Expected</span><strong>{report.expected}</strong></div><div><span>Entered</span><strong>{report.present}</strong></div><div><span>Did not enter</span><strong>{report.absent}</strong></div></div><div className="attendance-list">{report.students.map(student => <div className="attendance-row" key={student.id}><div><strong>{student.name}</strong><span>{student.student_number}</span></div><span className={student.present ? 'text-green' : 'text-amber'}>{student.present ? 'Present' : 'Absent'}</span></div>)}</div></>}</section>;
+}
+
 function AppShell({ session, onLogout, darkMode, setDarkMode }) {
   const [active, setActive] = useState('overview');
   const [rooms, setRooms] = useState([]);
@@ -150,7 +160,8 @@ function AppShell({ session, onLogout, darkMode, setDarkMode }) {
   const people = rooms.reduce((sum, room) => sum + room.people_count, 0);
   const dashboard = <><div className="stats-grid"><StatCard icon={DoorOpen} label="Classrooms tracked" value={rooms.length} detail="across 4 buildings" color="cyan" /><StatCard icon={CheckCircle2} label="Open right now" value={emptyRooms} detail="ready for your event" color="green" /><StatCard icon={Users} label="People on campus" value={people} detail="live sensor count" color="purple" /><StatCard icon={Gauge} label="Network confidence" value="98.6%" detail="last sync just now" color="orange" /></div><HowToUse /><div className="main-grid"><div><LiveRooms rooms={rooms} selected={selected} onSelect={setSelected} refreshing={refreshing} /><div className="lower-grid"><ActivityFeed history={history} /><div className="mini-card"><div className="section-heading"><div><p className="eyebrow">TODAY'S SIGNAL</p><h3>Campus utilization</h3></div><Gauge size={18} className="muted-icon" /></div><strong className="big-number">{report ? `${Math.round(report.rooms.reduce((a, r) => a + Number(r.usage_percent), 0) / Math.max(1, report.rooms.length))}%` : '—'}</strong><p className="subtle">average room usage from bookings</p><div className="sparkline">{[35, 48, 43, 70, 58, 82, 63, 76, 67, 88, 72, 80].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div></div></div></div><RoomInsight room={selected} onClose={() => setSelected(null)} /></div></>;
   const content = active === 'overview' ? dashboard : active === 'rooms' ? <div className="main-grid"><div><LiveRooms rooms={rooms} selected={selected} onSelect={setSelected} refreshing={refreshing} /><ActivityFeed history={history} /></div><RoomInsight room={selected} onClose={() => setSelected(null)} /></div> : active === 'events' ? <EventPlanner rooms={rooms} token={token} preselected={plannerRoom} onSaved={load} /> : <div className="main-grid"><ActivityFeed history={history} /><div className="history-panel"><div className="section-heading"><div><p className="eyebrow">READING ARCHIVE</p><h3>What the sensors see</h3></div><Search size={18} className="muted-icon" /></div>{history.map(item => <div className="history-row" key={item.id}><span>{formatDate(item.recorded_at)} · {formatTime(item.recorded_at)}</span><strong>{item.room_name}</strong><span>{item.people_count} people</span><span className={item.people_count ? 'text-amber' : 'text-green'}>{item.people_count ? 'occupied' : 'free'}</span></div>)}</div></div>;
-  return <div className="app-shell"><Sidebar active={active} setActive={setActive} onLogout={onLogout} admin={session.admin} /><main className="workspace"><nav className="workspace-nav"><strong>RoomPulse</strong><span>Smart classroom operations</span></nav><Header active={active} refreshing={refreshing} onRefresh={load} darkMode={darkMode} setDarkMode={setDarkMode} history={history} />{error && <div className="error-box page-error">{error}</div>}{content}<footer className="site-footer">RoomPulse · Smart classroom operations · Campus admin console</footer></main></div>;
+  const resolvedContent = active === 'attendance' ? <AttendancePanel schedules={schedules} token={token} /> : content;
+  return <div className="app-shell"><Sidebar active={active} setActive={setActive} onLogout={onLogout} admin={session.admin} /><main className="workspace"><nav className="workspace-nav"><strong>RoomPulse</strong><span>Smart classroom operations</span></nav><Header active={active} refreshing={refreshing} onRefresh={load} darkMode={darkMode} setDarkMode={setDarkMode} history={history} />{error && <div className="error-box page-error">{error}</div>}{resolvedContent}<footer className="site-footer">RoomPulse · Smart classroom operations · Campus admin console</footer></main></div>;
 }
 
 export default function App() {

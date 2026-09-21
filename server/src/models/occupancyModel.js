@@ -12,11 +12,12 @@ export async function findLatestByRoom() {
   return rows;
 }
 
-export async function create({ roomId, peopleCount, source }) {
+export async function create({ roomId, peopleCount, enteredCount = 0, exitedCount = 0, source }) {
   const { rows } = await query(
-    `INSERT INTO occupancy(room_id, people_count, source) VALUES($1,$2,$3)
-     RETURNING id, room_id, people_count, source, recorded_at`,
-    [roomId, peopleCount, source]);
+    `INSERT INTO occupancy(room_id, people_count, entered_count, exited_count, source)
+     VALUES($1,$2,$3,$4,$5)
+     RETURNING id, room_id, people_count, entered_count, exited_count, source, recorded_at`,
+    [roomId, peopleCount, enteredCount, exitedCount, source]);
   return rows[0];
 }
 
@@ -30,7 +31,8 @@ export async function findHistory({ roomId, limit = 30 }) {
   params.push(Math.min(Math.max(Number(limit) || 30, 1), 100));
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const { rows } = await query(`SELECT o.id, o.room_id, r.name AS room_name,
-      o.people_count, o.people_count > 0 AS is_occupied, o.source,
+      o.people_count, o.people_count > 0 AS is_occupied,
+      o.entered_count, o.exited_count, o.source,
       o.recorded_at, o.recorded_at AS timestamp
     FROM occupancy o JOIN rooms r ON r.id = o.room_id
     ${where} ORDER BY o.recorded_at DESC LIMIT $${params.length}`, params);

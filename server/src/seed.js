@@ -29,6 +29,17 @@ try {
     SELECT id,'PHY210','Applied Physics','Dr. Rao',
       CURRENT_DATE + INTERVAL '10 hours', CURRENT_DATE + INTERVAL '11 hours',38
     FROM rooms WHERE name='B-110' AND NOT EXISTS (SELECT 1 FROM schedules WHERE course_code='PHY210')`);
+  const { rows: schedules } = await query('SELECT id, course_code, attendees FROM schedules');
+  for (const schedule of schedules) {
+    for (let index = 1; index <= schedule.attendees; index += 1) {
+      const studentNumber = `${schedule.course_code}-${String(index).padStart(3, '0')}`;
+      const { rows: students } = await query(`INSERT INTO students(student_number, name, card_uid)
+        VALUES($1,$2,$3) ON CONFLICT(student_number) DO UPDATE SET name=EXCLUDED.name, card_uid=EXCLUDED.card_uid
+        RETURNING id`, [studentNumber, `Student ${String(index).padStart(3, '0')}`, `CARD-${studentNumber}`]);
+      await query(`INSERT INTO class_enrollments(schedule_id, student_id) VALUES($1,$2)
+        ON CONFLICT DO NOTHING`, [schedule.id, students[0].id]);
+    }
+  }
   await query(`INSERT INTO bookings(room_id,purpose,booked_by,start_time,end_time,attendees)
     SELECT id,'Robotics club workshop','Student Activities',
       CURRENT_DATE + INTERVAL '1 day' + INTERVAL '14 hours',

@@ -30,7 +30,8 @@ This app was designed to solve a common campus problem: deciding which classroom
 ├── client/                  # React + Vite frontend
 ├── server/                  # Express API and database scripts
 │   ├── sql/
-│   │   └── schema.sql       # Database schema and indexes
+│   │   ├── schema.sql       # Database schema and indexes
+│   │   └── migrations/      # Migrations for existing databases
 │   └── src/
 │       ├── config/          # Database configuration
 │       ├── controllers/     # Request handlers
@@ -39,6 +40,7 @@ This app was designed to solve a common campus problem: deciding which classroom
 │       ├── routes/          # API routing
 │       ├── services/        # DAA algorithms and classroom logic
 │       ├── app.js           # Express app setup
+│       ├── migrateOccupancy.js # Occupancy migration runner
 │       ├── seed.js          # Demo data seeding
 │       └── server.js        # Server entry point
 ├── package.json             # Root scripts for full-project tasks
@@ -108,6 +110,8 @@ npm run dev
 ```
 
 This starts both the server and the client together.
+
+When the API starts, it clears previous occupancy readings so the live dashboard begins with a fresh session. Room and schedule data remain unchanged.
 
 If you want to run them separately:
 

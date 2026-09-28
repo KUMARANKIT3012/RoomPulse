@@ -1,5 +1,9 @@
 import { query } from '../config/db.js';
 
+export async function clearSession() {
+  await query('DELETE FROM occupancy');
+}
+
 export async function findLatestByRoom() {
   const { rows } = await query(`
     SELECT DISTINCT ON (r.id) r.id AS room_id, r.name, r.capacity,

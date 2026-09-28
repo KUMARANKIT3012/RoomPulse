@@ -146,13 +146,28 @@ function AppShell({ session, onLogout, darkMode, setDarkMode }) {
   const token = session.token;
   const load = useCallback(async () => {
     setRefreshing(true);
-    try {
-      const [roomData, historyData, scheduleData, reportData] = await Promise.all([
-        api('/rooms'), api('/occupancy/history?limit=30'), api('/schedules', {}, token), api('/reports/utilization', {}, token)
-      ]);
-      setRooms(roomData); setHistory(historyData); setSchedules(scheduleData); setReport(reportData); setError('');
-      setSelected(old => old ? roomData.find(room => room.id === old.id) || old : null);
-    } catch (e) { setError(e.message); } finally { setRefreshing(false); }
+    const [roomsResult, historyResult, schedulesResult, reportResult] = await Promise.allSettled([
+      api('/rooms'), api('/occupancy/history?limit=30'), api('/schedules', {}, token), api('/reports/utilization', {}, token)
+    ]);
+
+    if (roomsResult.status === 'fulfilled') {
+      setRooms(roomsResult.value);
+      setSelected(old => old ? roomsResult.value.find(room => room.id === old.id) || old : null);
+      setError('');
+    } else {
+      console.error('Failed to load /rooms:', roomsResult.reason);
+      setError(roomsResult.reason.message);
+    }
+    if (historyResult.status === 'fulfilled') setHistory(historyResult.value);
+    else {
+      setHistory([]);
+      console.error('Failed to load /occupancy/history?limit=30:', historyResult.reason);
+    }
+    if (schedulesResult.status === 'fulfilled') setSchedules(schedulesResult.value);
+    else console.error('Failed to load /schedules:', schedulesResult.reason);
+    if (reportResult.status === 'fulfilled') setReport(reportResult.value);
+    else console.error('Failed to load /reports/utilization:', reportResult.reason);
+    setRefreshing(false);
   }, [token]);
   useEffect(() => { load(); const timer = setInterval(load, 5000); return () => clearInterval(timer); }, [load]);
   useEffect(() => { const handler = e => { setPlannerRoom(e.detail); setActive('events'); }; window.addEventListener('open-planner', handler); return () => window.removeEventListener('open-planner', handler); }, []);

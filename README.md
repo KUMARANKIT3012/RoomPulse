@@ -89,6 +89,14 @@ psql "$env:DATABASE_URL" -f server/sql/schema.sql
 npm run seed
 ```
 
+For an existing database created from an older schema, apply the occupancy counter migration before restarting the API:
+
+```bash
+npm run migrate:occupancy
+```
+
+This uses the existing Node.js PostgreSQL configuration from `server/.env`; `psql` is not required. The migration is safe to rerun. It adds `entered_count` and `exited_count`, backfills existing rows with `0`, and enforces the required `NOT NULL DEFAULT 0` definitions. Fresh databases get these columns from `server/sql/schema.sql`.
+
 If the database already exists and you want a clean reset, run the schema again before seeding.
 
 ### 4. Start the app
@@ -182,6 +190,7 @@ From the project root:
 | `npm run dev:client` | Start the frontend only |
 | `npm run build` | Build the frontend for production |
 | `npm run start` | Start the API in production mode |
+| `npm run migrate:occupancy` | Apply and verify the occupancy counter migration |
 | `npm run seed` | Seed demo data into PostgreSQL |
 
 ## Troubleshooting
